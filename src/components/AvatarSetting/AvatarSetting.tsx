@@ -7,6 +7,7 @@ import Typography from '@mui/material/Typography'
 import { useMutation } from '@tanstack/react-query'
 
 import { authApi } from '@libs/firebase/authenticate'
+import { Tooltip } from '@mui/material'
 import { useAuthStore } from '@stores/authStore'
 
 const AvatarSetting = () => {
@@ -14,6 +15,7 @@ const AvatarSetting = () => {
     mutationFn: () => authApi.logout(),
     onSettled: () => logout()
   })
+
   const { user, logout } = useAuthStore()
 
   const handleLogout = () => logoutMutate()
@@ -21,10 +23,12 @@ const AvatarSetting = () => {
   return (
     <Stack p={3} direction='row' justifyContent='space-between' alignItems='center' sx={{ backgroundColor: '#1e1e1e' }}>
       <Stack direction='row' spacing={1}>
-        <Avatar src={user?.photoURL || ''} />
+        <Tooltip title={user?.email}>
+          <Avatar src={user?.avatar || ''} />
+        </Tooltip>
         <Stack height='100%' justifyContent='space-between'>
           <Typography variant='body2' fontWeight={600}>
-            {user?.displayName || user?.email}
+            {user?.fullName || user?.email}
           </Typography>
           <Typography fontSize={12} color={grey[700]} pt={0.1}>
             View Profile

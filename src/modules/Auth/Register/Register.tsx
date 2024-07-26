@@ -1,6 +1,7 @@
+import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -19,12 +20,8 @@ import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import { styled } from '@mui/system'
 
-// import { authApi } from '@/firebase/authenticate'
-import { CurrentUser } from '@interfaces/user.interface'
 import { authApi } from '@libs/firebase/authenticate'
-import { documentApi } from '@libs/firebase/db'
 import { PATH } from '@routes/path'
-import { useMutation } from '@tanstack/react-query'
 
 const VisuallyHiddenInput = styled('input')({
   clip: 'rect(0 0 0 0)',
@@ -84,58 +81,24 @@ type RegisterFormValues = z.infer<typeof schema>
 
 const Register = () => {
   const navigate = useNavigate()
-  const { state } = useLocation()
 
+  const [steps, setStep] = useState<'info' | 'avatar'>('info')
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const { mutate: registerMutate, isPending } = useMutation({
-    mutationFn: (payload: RegisterFormValues) => authApi.register(payload.email, payload.password),
+    mutationFn: (payload: RegisterFormValues) =>
+      authApi.register(payload.email, payload.password, payload.displayName, avatar[0]),
     onSuccess: async (currentUser) => {
-      console.log({ currentUser })
-      if (currentUser && currentUser.uid) {
-        const formValues = getValues()
-        addCollectionMutation.mutateAsync({
-          email: formValues.email as string,
-          displayName: formValues.displayName as string,
-          password: formValues.password as string,
-          avatar: '',
-          uid: currentUser.uid
-        })
-      }
-      console.log('currentUser', currentUser)
+      if (!currentUser) return
+      navigate(PATH.LOGIN, { state: { email: currentUser.email } })
     }
   })
-
-  const addCollectionMutation = useMutation({
-    mutationFn: (
-      payload: Pick<RegisterFormValues, 'displayName' | 'email' | 'password'> & { avatar: string; uid: string }
-    ) => {
-      const payloadModified = {
-        email: payload.email,
-        displayName: payload.displayName,
-        password: payload.password,
-        avatar: ''
-      }
-      return documentApi.setDoc<{
-        email: string
-        displayName: string
-        password: string
-      }>('users', payload.uid, payloadModified)
-    },
-    onSuccess: (currentUser) => {
-      console.log('currentUser', currentUser)
-      // navigate(PATH.REGISTER, { state: { user: currentUser } })
-    }
-  })
-
-  const currentUser = state?.user as CurrentUser | null
 
   const {
     watch,
     register,
     setValue,
     handleSubmit,
-    getValues,
     formState: { errors }
   } = useForm<RegisterFormValues>({
     defaultValues: {
@@ -144,13 +107,13 @@ const Register = () => {
       confirmPassword: '',
       avatar: undefined
     },
-    resolver: currentUser ? zodResolver(schema) : undefined,
+    resolver: steps === 'info' ? zodResolver(schema) : undefined,
     criteriaMode: 'all'
   })
 
   const avatar = watch('avatar')
 
-  console.log({ currentUser }, avatar && avatar?.length)
+  console.log({ avatar })
 
   const handleClickShowPassword = (type: string) => {
     if (type === 'password') {
@@ -164,16 +127,20 @@ const Register = () => {
     event.preventDefault()
   }
 
+  const handleUploadAvatar = (file: File) => {
+    console.log({ file })
+  }
+
   const onsubmit = (data: RegisterFormValues) => {
-    // console.log(data)
-    // navigate(PATH.REGISTER, { state: { user: null } })
+    if (steps === 'info') return setStep('avatar')
+    console.log({ data })
     registerMutate(data)
   }
-  console.log({ currentUser })
+
   return (
     <form onSubmit={handleSubmit(onsubmit)}>
       <Grid container spacing={4}>
-        <Grid item xs={12} display={currentUser ? 'none' : 'block'}>
+        <Grid item xs={12} display={steps === 'avatar' ? 'none' : 'block'}>
           <TextField
             {...register('displayName')}
             placeholder='Enter your name...'
@@ -188,7 +155,7 @@ const Register = () => {
             </FormHelperText>
           )}
         </Grid>
-        <Grid item xs={12} display={currentUser ? 'none' : 'block'}>
+        <Grid item xs={12} display={steps === 'avatar' ? 'none' : 'block'}>
           <TextField
             {...register('email')}
             placeholder='Enter your email...'
@@ -203,7 +170,7 @@ const Register = () => {
             </FormHelperText>
           )}
         </Grid>
-        <Grid item xs={12} display={currentUser ? 'none' : 'block'}>
+        <Grid item xs={12} display={steps === 'avatar' ? 'none' : 'block'}>
           <TextField
             {...register('password')}
             placeholder='Enter your password...'
@@ -233,7 +200,7 @@ const Register = () => {
             </FormHelperText>
           )}
         </Grid>
-        <Grid item xs={12} display={currentUser ? 'none' : 'block'}>
+        <Grid item xs={12} display={steps === 'avatar' ? 'none' : 'block'}>
           <TextField
             {...register('confirmPassword')}
             placeholder='Enter your password...'
@@ -264,7 +231,7 @@ const Register = () => {
           )}
         </Grid>
 
-        <Grid item xs={12} display={!currentUser ? 'none' : 'block'}>
+        <Grid item xs={12} display={steps === 'avatar' ? 'block' : 'none'}>
           <Typography fontSize={14} fontWeight={600} mb={2}>
             Upload avatar
           </Typography>
@@ -310,14 +277,15 @@ const Register = () => {
         </Grid>
         <Grid item xs={12}>
           <LoadingButton
-            loading={isPending || addCollectionMutation.isPending}
+            disabled={steps === 'avatar' && (!avatar || avatar?.length === 0)}
+            loading={isPending}
             type='submit'
             size='large'
             variant='contained'
             color='primary'
             fullWidth
           >
-            {currentUser ? 'Upload avatar' : 'Sign up'}
+            {steps === 'info' ? 'Next' : 'Sign up'}
           </LoadingButton>
         </Grid>
         <Grid item xs={12}>

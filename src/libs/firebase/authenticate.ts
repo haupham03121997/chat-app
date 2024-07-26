@@ -1,8 +1,23 @@
 import { CurrentUser } from '@interfaces/user.interface'
-import { auth } from '@libs/firebase/config'
+import { auth, database } from '@libs/firebase/config'
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth'
+import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { uploadApi } from './upload'
 
 export const authApi = {
+  fetchUser: async (uid: string) => {
+    try {
+      const docRef = doc(database, 'users', uid)
+      const docSnap = await getDoc(docRef)
+      if (docSnap.exists()) {
+        return docSnap.data() as CurrentUser
+      } else {
+        throw Error('User not found')
+      }
+    } catch (error: any) {
+      throw Error(error.message)
+    }
+  },
   signIn: async (email: string, password: string) => {
     try {
       const response = await signInWithEmailAndPassword(auth, email, password)
@@ -18,11 +33,22 @@ export const authApi = {
       throw Error(errors[error.code] || error.message)
     }
   },
-  register: async (email: string, password: string) => {
+  register: async (email: string, password: string, displayName: string, file: File) => {
     try {
       const response = await createUserWithEmailAndPassword(auth, email, password)
+      const url = await uploadApi.upload(file)
+
       if (response.user) {
-        // upload user data to firestore
+        await setDoc(doc(database, 'users', response.user.uid), {
+          fullName: displayName,
+          email: response.user.email,
+          id: response.user.uid,
+          avatar: url || '',
+          blocked: []
+        })
+        await setDoc(doc(database, 'userChats', response.user.uid), {
+          chats: []
+        })
       }
       return response.user as CurrentUser
     } catch (error: any) {

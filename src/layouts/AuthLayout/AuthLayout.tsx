@@ -9,7 +9,7 @@ interface AuthLayoutProps {
   subTitle?: string
 }
 
-const AuthLayout: FC<AuthLayoutProps> = ({ children, title = 'Welcome back!', subTitle }) => {
+const AuthLayout: FC<AuthLayoutProps> = ({ children, title = 'Welcome back! 👋', subTitle }) => {
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100vw' }}>
       <Box maxWidth={500} minWidth={500} p={4} borderRadius={4} sx={{ backgroundColor: '#1e1e1e' }}>

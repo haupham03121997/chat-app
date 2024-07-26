@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 import Visibility from '@mui/icons-material/Visibility'
 import VisibilityOff from '@mui/icons-material/VisibilityOff'
@@ -37,6 +37,9 @@ type LoginFormValues = z.infer<typeof schema>
 const Login = () => {
   const navigate = useNavigate()
   const { setUser } = useAuthStore() //👈
+  const { state } = useLocation()
+
+  const emailState = state?.email || ''
 
   const [showPassword, setShowPassword] = useState(false)
 
@@ -50,6 +53,7 @@ const Login = () => {
 
   const {
     register,
+    setValue,
     handleSubmit,
     formState: { errors }
   } = useForm<LoginFormValues>({
@@ -70,6 +74,10 @@ const Login = () => {
   const onSubmit = (data: LoginFormValues) => {
     signInMutate(data)
   }
+
+  useEffect(() => {
+    if (emailState) setValue('email', emailState)
+  }, [emailState])
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>

@@ -5,6 +5,7 @@ import darkTheme from '@themes/darkTheme'
 import { onAuthStateChanged } from 'firebase/auth'
 
 import { CurrentUser } from '@interfaces/user.interface'
+import { authApi } from '@libs/firebase/authenticate'
 import { auth } from '@libs/firebase/config'
 import { useAuthStore } from '@stores/authStore'
 import { useEffect } from 'react'
@@ -12,7 +13,7 @@ import './App.css'
 
 function App() {
   const element = useRoutesElement()
-  const { setUser } = useAuthStore()
+  const { setUser, logout } = useAuthStore()
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, initializeUser)
@@ -21,13 +22,19 @@ function App() {
 
   async function initializeUser(user: CurrentUser | null) {
     if (user) {
-      setUser({ ...user })
+      const currentUser = await authApi.fetchUser(user.uid)
+      console.log('currentUser', currentUser)
+      if (currentUser) {
+        setUser({ ...currentUser, ...user })
+      }
+      // setUser({ ...user })
 
-      // check if provider is email and password login
-      const isEmail = user.providerData.some((provider) => provider.providerId === 'password')
+      // // check if provider is email and password login
+      // const isEmail = user.providerData.some((provider) => provider.providerId === 'password')
 
-      console.log({ isEmail })
+      // console.log({ isEmail })
     } else {
+      logout()
     }
   }
 
