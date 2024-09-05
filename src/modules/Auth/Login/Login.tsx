@@ -19,7 +19,6 @@ import { useMutation } from '@tanstack/react-query'
 
 import { authApi } from '@libs/firebase/authenticate'
 import { PATH } from '@routes/path'
-import { useAuthStore } from '@stores/authStore'
 
 const schema = z.object({
   email: z.string().min(1, 'Email is required').email('Invalid email'),
@@ -36,7 +35,6 @@ type LoginFormValues = z.infer<typeof schema>
 
 const Login = () => {
   const navigate = useNavigate()
-  const { setUser } = useAuthStore() //👈
   const { state } = useLocation()
 
   const emailState = state?.email || ''

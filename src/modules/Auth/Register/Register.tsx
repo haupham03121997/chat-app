@@ -127,10 +127,6 @@ const Register = () => {
     event.preventDefault()
   }
 
-  const handleUploadAvatar = (file: File) => {
-    console.log({ file })
-  }
-
   const onsubmit = (data: RegisterFormValues) => {
     if (steps === 'info') return setStep('avatar')
     console.log({ data })

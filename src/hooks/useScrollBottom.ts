@@ -1,8 +1,8 @@
 import { RefObject, useLayoutEffect, useState } from 'react'
 
 const useScrollBottom = (ref: RefObject<HTMLDivElement>) => {
-  const [scrollBottom, setScrollBottom] = useState(false)
-  const [scrollY, setScrollY] = useState(0)
+  const [scrollBottom] = useState(false)
+  const [scrollY] = useState(0)
 
   useLayoutEffect(() => {
     const handleScroll = () => {
